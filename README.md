@@ -1,66 +1,218 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# Laravel8入門 Sailで簡易掲示板を作ろう
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# 1 今回やること
 
-## About Laravel
+大きく分けて以下の4つ
+* 基本機能
+* データベース
+* CRUD処理
+* リレーション
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+今回はLaravel x sailで作成していく
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+# 2 環境構築
+## 用意するもの
+* VSCode
+## 手順
+### ①Laravelファイル生成
+MyBBSというフォルダを作り、その中でLaravelに必要なファイルを生成してくれる下記コマンド実行<br>
+Windowsで実行する際、ターミナルはWSLを使用<br>
+```
+curl -s "https://laravel.build/MyBBS" | bash
+```
+※上のコマンドを入力しても何も起きなかった場合、下記コマンドを直接実行したら解決
+```
+docker run --rm \
+    -v "$(pwd)":/opt \
+    -w /opt \
+    laravelsail/php81-composer:latest \
+    bash -c "laravel new MyBBS && cd MyBBS && php ./artisan sail:install --with=mysql,redis,meilisearch,mailhog,selenium "
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### ②VSCodeで生成したMyBBSフォルダを開く
+各種フォルダが生成されていることを確認<br>
 
-## Learning Laravel
+主なフォルダ達(※間違って消さないように)
+- app : アプリケーションに関するコードを書く場所
+- config：各種設定
+- database：データベースの設定
+- public：JSやCSS等ブラウザからアクセスできるフォルダ
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### ③VSCode拡張機能の導入
+下記2つの拡張機能を入れる
+- EditorConfig for VS Code 
+<br>→Laravel標準のエディタ設定を使用する為
+- Laravel Blade Snippets
+<br>→Blade記法をVSCodeで扱いやすくする為
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### ④Laravel初期設定
+.envファイルを開き、下記コマンドを追加
+(ブラウザでアクセスする際のポートを変更)
+```
+APP_PORT=8573
+```
+config/app.phpを開き、timezoneをAsia/Tokyoに変更(だいたい70行目)
+```
+'timezone' => 'UTC',
+↓
+'timezone' => 'Asia/Tokyo',
+```
+localeをjaに変更(だいたい83行目)
+```
+'locale' => 'en',
+↓
+'locale' => 'ja',
+```
 
-## Laravel Sponsors
+### ⑤コンテナ立ち上げ
+ターミナルで下記を入力
+```
+./vendor/bin/sail up -d
+```
+通常は docker-compose up -d とするところだが、 docker のコンテナに対する操作に使える sail という便利なコマンドが Laravel に用意されているので、そちらを使う<br>
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+Dockerを停止したい場合はターミナルで下記を入力
+```
+./vendor/bin/sail down
+```
 
-### Premium Partners
+**環境構築は以上です**
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[CMS Max](https://www.cmsmax.com/)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
-- **[Romega Software](https://romegasoftware.com)**
+# 3 学んだことメモ
 
-## Contributing
+## ルーティングについて
+routes/web.phpにこのような記述がある
+```
+Route::get('/', function () {
+    return view('welcome');
+});
+```
+これはget形式、
+通常のアクセス(URLに何もつけない)ならこの関数を実行しなさいという意味(=ルーティング)<br>
+welcome = resources/welcome.blade.phpのこと
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## indexへの値渡し
 
-## Code of Conduct
+web.phpで下記のように定義
+```
+    $posts = [
+        'Title A',
+        'Title B',
+        'Title C',
+    ];
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+    return view('index')
+        ->with(['posts' => $posts]);
+```
+こうすると、viewのindexで$postsの内容をpostsという変数名で受け取れる
 
-## Security Vulnerabilities
+## var_dumpの便利な使い方(Laravel限定)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+置き換えると見やすくなる
+```
+var_dump($posts);
+exit;
+↓
+dd($posts);
+```
+でもddって直感的に意味が伝わりづらい気がする
 
-## License
+## 開発の大きな流れ
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+* web.phpにルーティング定義
+* ルーティングに対応する処理をControllerに書く
+* Controllerでviewを呼びだすことでページ表示ができる
+* viewではコンポーネントやControllerから渡された値を埋め込める
+
+## Sailコマンド
+
+### コントローラー作成
+
+PostControllerという名前で作成<br>
+作成先：Http/Controllers/PostController.php
+```
+./vendor/bin/sail artisan make:contsroller PostController
+```
+
+### sailでDBログイン
+
+DB名：mybbs<br>
+詳しくは.envファイルを確認
+```
+./vendor/bin/sail mysql mybbs
+```
+
+### sailでマイグレーションファイル作成
+
+作成先：database/migrations/
+```
+./vendor/bin/sail artisan make:migration create_posts_table
+```
+
+### マイグレーション実行
+
+```
+./vendor/bin/sail artisan migrate
+```
+
+### Eloquent
+
+テーブルをPHPのオブジェクトのように扱う<br>
+app/ModelsにPost.phpを作成
+```
+./vendor/bin/sail artisan make:model Post
+```
+
+### tinker
+
+ターミナルからデータを操作できる
+```
+./vendor/bin/sail tinker
+
+(データ追加する際の入力例)
+$post = new App\Models\Post();
+$post->title = 'Title 1';
+$post->body = 'Body 1';
+$post->save();
+exit;
+```
+別の方法<br>
+Post.phpにfillable追加
+```
+class Post extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'title',
+        'body',
+    ];
+}
+```
+
+### マイグレーション、モデル、コントローラーをまとめて作る<br>
+-mcをつけるとマイグレーションとコントローラーを一緒に作る
+```
+sail artisan make:model ModelName -mc
+```
+
+## その他
+URLから渡されたidをもとに暗黙的にモデルのデータに結びつけてくれる仕組み<br>
+→Implicit Binding
+
+Laravelではhtmlspecialcharsの代わりにe()を使って書ける<br>
+→直感的に分かりづらい表現かも
+
+# 4 またの機会にやれそうなこと
+
+## ビュー、レイアウト整理
+もうちょっと綺麗な(それっぽい)見た目に変更する
+
+## ページング
+投稿が増えれば増えるほど縦に長くなるので
+
+## ログイン機能
+Laravel使ってるのに何故かレッスンで触れなかった為
+
+## 違う環境で作成
+例：https://qiita.com/moritalous/items/14d4099023981dcf4fd2
